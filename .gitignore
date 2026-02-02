@@ -18,9 +18,9 @@ env/
 *.swp
 *.swo
 
-# Output files
+# Output files (ignore json in root, allow in landing)
 *.json
-!requirements.txt
+!landing/*.json
 
 # Keep background video but ignore user exports
 dist/
@@ -31,5 +31,8 @@ build/
 .DS_Store
 Thumbs.db
 
-# Landing page (deployed separately)
-landing/
+# Landing page build output
+landing/dist/
+landing/node_modules/
+landing/.vercel/
+landing/.astro/
