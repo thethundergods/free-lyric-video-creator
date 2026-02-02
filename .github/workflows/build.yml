@@ -27,6 +27,7 @@ jobs:
             --name "FREE Lyric Video Creator" \
             --icon AppIcon.icns \
             --add-data "icon.png:." \
+            --add-data "AppIcon.icns:." \
             --add-data "Red to Blue Squares - HD Video Background Loop [pVNbWKa6qbg].mp4:." \
             main.py
 

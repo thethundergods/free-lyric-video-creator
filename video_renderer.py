@@ -1,10 +1,18 @@
 """Video renderer for karaoke-style lyrics video with word-by-word highlighting."""
 import os
+import sys
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 import numpy as np
 from moviepy import VideoClip, AudioFileClip, VideoFileClip
 
 from lyrics_timer import LyricsTimer
+
+
+def resource_path(relative_path):
+    """Get absolute path to resource, works for dev and for PyInstaller."""
+    if hasattr(sys, '_MEIPASS'):
+        return os.path.join(sys._MEIPASS, relative_path)
+    return os.path.join(os.path.dirname(__file__), relative_path)
 
 # Default background video (looping)
 DEFAULT_BG_VIDEO = "Red to Blue Squares - HD Video Background Loop [pVNbWKa6qbg].mp4"
@@ -60,7 +68,7 @@ class VideoRenderer:
         self._calculate_timing_info()
 
         # Load background video if available
-        bg_path = os.path.join(os.path.dirname(__file__), DEFAULT_BG_VIDEO)
+        bg_path = resource_path(DEFAULT_BG_VIDEO)
         if os.path.exists(bg_path):
             self.bg_clip = VideoFileClip(bg_path)
             self.bg_duration = self.bg_clip.duration

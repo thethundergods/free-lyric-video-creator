@@ -24,6 +24,14 @@ import sys
 import subprocess
 import platform
 
+
+def resource_path(relative_path):
+    """Get absolute path to resource, works for dev and for PyInstaller."""
+    if hasattr(sys, '_MEIPASS'):
+        return os.path.join(sys._MEIPASS, relative_path)
+    return os.path.join(os.path.dirname(__file__), relative_path)
+
+
 # Set app name and icon for macOS (must be before pygame import)
 APP_NAME = "FREE Lyric Video Creator"
 IS_MAC = platform.system() == 'Darwin'
@@ -42,7 +50,7 @@ if IS_MAC:
                 info['CFBundleName'] = APP_NAME
 
         # Set dock icon
-        icon_path = os.path.join(os.path.dirname(__file__), 'AppIcon.icns')
+        icon_path = resource_path('AppIcon.icns')
         if os.path.exists(icon_path):
             app = NSApplication.sharedApplication()
             icon = NSImage.alloc().initWithContentsOfFile_(icon_path)
@@ -114,7 +122,7 @@ class LyricVideoCreator:
         pygame.display.set_caption("FREE Lyric Video Creator")
 
         # Set dock/window icon
-        icon_path = os.path.join(os.path.dirname(__file__), 'icon.png')
+        icon_path = resource_path('icon.png')
         if os.path.exists(icon_path):
             icon = pygame.image.load(icon_path)
             pygame.display.set_icon(icon)
