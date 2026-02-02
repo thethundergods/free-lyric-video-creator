@@ -8,6 +8,8 @@ No ads. No subscriptions. No AI. No bullshit.
 
 Get the latest release: [Releases](https://github.com/thethundergods/free-lyric-video-creator/releases)
 
+**Mac users:** Right-click the app and select "Open" the first time. macOS blocks unsigned apps by default. [Learn more](https://support.apple.com/guide/mac-help/open-a-mac-app-from-an-unknown-developer-mh40616/mac)
+
 ## Features
 
 - Load any audio file (MP3, WAV, OGG, FLAC, M4A)
