@@ -1,0 +1,67 @@
+FREE Lyric Video Creator - Build Instructions
+=============================================
+
+=== WINDOWS ===
+
+Option 1: Run from source
+-------------------------
+1. Install Python 3.10+ from https://python.org
+   (Check "Add Python to PATH" during installation)
+
+2. Open Command Prompt in this folder and run:
+   python -m venv venv
+   venv\Scripts\activate
+   pip install -r requirements.txt
+   python main.py
+
+Option 2: Build standalone .exe (no Python needed to run)
+---------------------------------------------------------
+1. Install Python 3.10+ from https://python.org
+
+2. Double-click build_windows.bat
+   OR run in Command Prompt:
+   build_windows.bat
+
+3. The executable will be created at:
+   dist\FREE Lyric Video Creator.exe
+
+4. Copy the .exe anywhere and run it - no installation needed!
+
+
+=== macOS ===
+
+Option 1: Run from source
+-------------------------
+1. Open Terminal in this folder and run:
+   python3 -m venv venv
+   source venv/bin/activate
+   pip install -r requirements.txt
+   pip install pyobjc-framework-Cocoa
+   python main.py
+
+Option 2: Use the app bundle
+----------------------------
+Double-click "FREE Lyric Video Creator.app"
+
+
+=== FEATURES ===
+
+- Load audio files (MP3, WAV, OGG, FLAC, M4A)
+- Type or paste lyrics
+- Time words by tapping SPACE while audio plays
+- Export karaoke-style lyric videos (480p, 720p, 1080p)
+- Upload directly to YouTube
+
+
+=== KEYBOARD SHORTCUTS ===
+
+SPACE        - Mark current word with timestamp
+DELETE       - Unmark last timed word
+P            - Play/Pause audio
+S            - Stop audio
+LEFT/RIGHT   - Seek 5 seconds
+L            - Load audio file
+T            - Load lyrics text file
+V            - Paste lyrics from clipboard
+E            - Export video
+ESC          - Quit
