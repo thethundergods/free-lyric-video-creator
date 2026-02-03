@@ -1,0 +1,102 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-mac:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build Mac app
+        run: |
+          pyinstaller --onedir --windowed \
+            --name "FREE Lyric Video Creator" \
+            --icon AppIcon.icns \
+            --add-data "icon.png:." \
+            --add-data "AppIcon.icns:." \
+            --add-data "Red to Blue Squares - HD Video Background Loop [pVNbWKa6qbg].mp4:." \
+            main.py
+
+      - name: Create zip
+        run: |
+          cd dist
+          zip -r FREE-Lyric-Video-Creator-Mac.zip "FREE Lyric Video Creator.app"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mac-build
+          path: dist/FREE-Lyric-Video-Creator-Mac.zip
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build Windows exe
+        run: |
+          pyinstaller --onedir --windowed `
+            --name "FREE Lyric Video Creator" `
+            --icon icon.ico `
+            --add-data "icon.png;." `
+            --add-data "Red to Blue Squares - HD Video Background Loop [pVNbWKa6qbg].mp4;." `
+            main.py
+
+      - name: Create zip
+        run: |
+          Compress-Archive -Path "dist\FREE Lyric Video Creator" -DestinationPath "dist\FREE-Lyric-Video-Creator-Windows.zip"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-build
+          path: dist/FREE-Lyric-Video-Creator-Windows.zip
+
+  release:
+    needs: [build-mac, build-windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download Mac build
+        uses: actions/download-artifact@v4
+        with:
+          name: mac-build
+          path: ./artifacts
+
+      - name: Download Windows build
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-build
+          path: ./artifacts
+
+      - name: Upload to Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            artifacts/FREE-Lyric-Video-Creator-Mac.zip
+            artifacts/FREE-Lyric-Video-Creator-Windows.zip

@@ -1,0 +1,37 @@
+# Credentials
+credentials/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+.venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Output files (ignore json in root, allow in landing)
+*.json
+!landing/*.json
+
+# Build output
+dist/
+build/
+*.spec
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Landing page build output
+landing/dist/
+landing/node_modules/
+landing/.vercel/
+landing/.astro/
