@@ -81,10 +81,11 @@ class Button:
 
     def draw(self, screen, font):
         color = self.hover_color if self.is_hovered else self.color
-        pygame.draw.rect(screen, color, self.rect, border_radius=8)
+        pygame.draw.rect(screen, color, self.rect, border_radius=5)
+        pygame.draw.rect(screen, (100, 100, 100), self.rect, 1, border_radius=5)
 
-        # Text brightens on hover
-        text_color = (245, 235, 220) if self.is_hovered else (185, 175, 160)
+        # Text
+        text_color = (250, 250, 250)
         text_surface = font.render(self.text, True, text_color)
         text_rect = text_surface.get_rect(center=self.rect.center)
         screen.blit(text_surface, text_rect)
@@ -100,16 +101,16 @@ class Button:
 
 
 class LyricVideoCreator:
-    # Colors — warm lofi palette
-    BG_COLOR = (26, 22, 24)
-    TEXT_COLOR = (240, 228, 210)
-    TIMED_COLOR = (210, 175, 80)
-    CURRENT_COLOR = (235, 130, 100)
-    DIM_COLOR = (115, 100, 88)
-    STATUS_BG = (34, 28, 30)
-    PANEL_COLOR = (32, 26, 28)
-    ACCENT_COLOR = (80, 58, 55)
-    ACCENT_GLOW = (180, 110, 85)
+    # Colors — classic dark
+    BG_COLOR = (20, 20, 20)
+    TEXT_COLOR = (250, 250, 250)
+    TIMED_COLOR = (100, 200, 100)
+    CURRENT_COLOR = (255, 215, 0)
+    DIM_COLOR = (100, 100, 100)
+    STATUS_BG = (40, 40, 40)
+    PANEL_COLOR = (30, 30, 30)
+    ACCENT_COLOR = (60, 60, 60)
+    ACCENT_GLOW = (255, 215, 0)
 
     # Layout
     WIDTH = 1150
@@ -196,49 +197,46 @@ class LyricVideoCreator:
         w = self.BUTTON_PANEL_WIDTH - 20
         h = 32
         gap = 8
-        default_color = (52, 42, 40)
-        default_hover = (68, 55, 50)
-
         # FILE section
         self.panel_labels.append(("FILE", y - 14))
-        buttons.append(Button(x, y, w, h, "Load Audio (L)", self.load_audio, color=default_color, hover_color=default_hover))
+        buttons.append(Button(x, y, w, h, "Load Audio (L)", self.load_audio))
         y += h + gap
-        buttons.append(Button(x, y, w, h, "Load Lyrics (T)", self.load_lyrics_file, color=default_color, hover_color=default_hover))
+        buttons.append(Button(x, y, w, h, "Load Lyrics (T)", self.load_lyrics_file))
         y += h + gap
-        buttons.append(Button(x, y, w, h, "Paste Lyrics (V)", self.paste_lyrics, color=default_color, hover_color=default_hover))
+        buttons.append(Button(x, y, w, h, "Paste Lyrics (V)", self.paste_lyrics))
         y += h + gap
-        buttons.append(Button(x, y, w, h, "Type Lyrics", self.type_lyrics, color=default_color, hover_color=default_hover))
+        buttons.append(Button(x, y, w, h, "Type Lyrics", self.type_lyrics))
         y += h + gap + 14
 
         # PLAYBACK section
         self.panel_labels.append(("PLAYBACK", y - 14))
-        buttons.append(Button(x, y, w, h, "Play / Pause (P)", self.toggle_play, color=(50, 62, 48), hover_color=(65, 80, 60)))
+        buttons.append(Button(x, y, w, h, "Play / Pause (P)", self.toggle_play, color=(50, 80, 50)))
         y += h + gap
-        buttons.append(Button(x, y, w, h, "Stop (S)", self.stop_audio, color=default_color, hover_color=default_hover))
+        buttons.append(Button(x, y, w, h, "Stop (S)", self.stop_audio))
         y += h + gap
-        buttons.append(Button(x, y, w//2 - 2, h, "<< 5s", self.seek_back, color=default_color, hover_color=default_hover))
-        buttons.append(Button(x + w//2 + 2, y, w//2 - 2, h, "5s >>", self.seek_forward, color=default_color, hover_color=default_hover))
+        buttons.append(Button(x, y, w//2 - 2, h, "<< 5s", self.seek_back))
+        buttons.append(Button(x + w//2 + 2, y, w//2 - 2, h, "5s >>", self.seek_forward))
         y += h + gap + 14
 
         # TIMING section
         self.panel_labels.append(("TIMING", y - 14))
-        buttons.append(Button(x, y, w, h, "Mark Word (SPACE)", self.mark_word, color=(68, 55, 35), hover_color=(88, 72, 45)))
+        buttons.append(Button(x, y, w, h, "Mark Word (SPACE)", self.mark_word, color=(80, 80, 50)))
         y += h + gap
-        buttons.append(Button(x, y, w, h, "Unmark Last (DEL)", self.unmark_word, color=default_color, hover_color=default_hover))
+        buttons.append(Button(x, y, w, h, "Unmark Last (DEL)", self.unmark_word))
         y += h + gap
-        buttons.append(Button(x, y, w, h, "Reset All Timings", self.reset_timings, color=(68, 40, 40), hover_color=(90, 52, 50)))
+        buttons.append(Button(x, y, w, h, "Reset All Timings", self.reset_timings, color=(80, 50, 50)))
         y += h + gap + 14
 
         # PROJECT section
         self.panel_labels.append(("PROJECT", y - 14))
-        buttons.append(Button(x, y, w, h, "Save Project", self.save_project, color=(50, 55, 42), hover_color=(65, 72, 55)))
+        buttons.append(Button(x, y, w, h, "Save Project", self.save_project, color=(50, 70, 50)))
         y += h + gap
-        buttons.append(Button(x, y, w, h, "Open Project", self.load_project, color=(50, 55, 42), hover_color=(65, 72, 55)))
+        buttons.append(Button(x, y, w, h, "Open Project", self.load_project, color=(50, 70, 50)))
         y += h + gap + 14
 
         # EXPORT section
         self.panel_labels.append(("EXPORT", y - 14))
-        buttons.append(Button(x, y, w, h, "Export Video (E)", self.export_video, color=(55, 42, 55), hover_color=(75, 55, 75)))
+        buttons.append(Button(x, y, w, h, "Export Video (E)", self.export_video, color=(50, 50, 80)))
 
         return buttons
 
@@ -358,8 +356,8 @@ class LyricVideoCreator:
         self._edit_drag_origin = 0
         self.editing = True
         self.edit_buttons = [
-            Button(0, 0, 100, 32, "Save", self._confirm_edit, color=(50, 62, 48), hover_color=(65, 80, 60)),
-            Button(0, 0, 100, 32, "Cancel", self._cancel_edit, color=(68, 40, 40), hover_color=(90, 52, 50)),
+            Button(0, 0, 100, 32, "Save", self._confirm_edit, color=(50, 80, 50)),
+            Button(0, 0, 100, 32, "Cancel", self._cancel_edit, color=(80, 50, 50)),
         ]
         pygame.key.set_repeat(400, 50)
 
@@ -1182,7 +1180,7 @@ class LyricVideoCreator:
         bar_height = 6
         bar_y = y + 3  # vertically center the thinner bar
         # Dark inset track
-        pygame.draw.rect(self.screen, (14, 14, 20), (self.MARGIN, bar_y, bar_width, bar_height), border_radius=3)
+        pygame.draw.rect(self.screen, (30, 30, 30), (self.MARGIN, bar_y, bar_width, bar_height), border_radius=3)
         if self.audio.duration > 0:
             progress = self.audio.get_position() / self.audio.duration
             fill_width = int(bar_width * progress)
@@ -1287,7 +1285,7 @@ class LyricVideoCreator:
                     pill_w = word_surface.get_width() + pill_pad_x * 2
                     pill_h = word_surface.get_height() + pill_pad_y * 2
                     pill_surf = pygame.Surface((pill_w, pill_h), pygame.SRCALPHA)
-                    pygame.draw.rect(pill_surf, (235, 130, 100, 35), (0, 0, pill_w, pill_h), border_radius=6)
+                    pygame.draw.rect(pill_surf, (255, 215, 0, 35), (0, 0, pill_w, pill_h), border_radius=6)
                     self.screen.blit(pill_surf, (lx - pill_pad_x, draw_y - pill_pad_y))
 
                 self.screen.blit(word_surface, (lx, draw_y))
@@ -1403,8 +1401,8 @@ class LyricVideoCreator:
 
         # Background for edit area
         edit_rect = pygame.Rect(self.MARGIN - 5, top_y - 5, content_width + 10, text_area_height + 10)
-        pygame.draw.rect(self.screen, (34, 28, 30), edit_rect, border_radius=4)
-        pygame.draw.rect(self.screen, (90, 68, 62), edit_rect, 1, border_radius=4)
+        pygame.draw.rect(self.screen, (30, 30, 30), edit_rect, border_radius=4)
+        pygame.draw.rect(self.screen, (80, 80, 80), edit_rect, 1, border_radius=4)
 
         # Wrap text and find cursor
         wrap_width = content_width - 10  # small padding
@@ -1452,7 +1450,7 @@ class LyricVideoCreator:
                     x1 = self.MARGIN + self.font.size(line[:local_start])[0]
                     x2 = self.MARGIN + self.font.size(line[:local_end])[0]
                     sel_rect = pygame.Rect(x1, draw_y, x2 - x1, line_h - 2)
-                    pygame.draw.rect(self.screen, (100, 65, 55), sel_rect)
+                    pygame.draw.rect(self.screen, (60, 60, 80), sel_rect)
 
             if line:
                 text_surface = self.font.render(line, True, self.TEXT_COLOR)
