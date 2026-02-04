@@ -1,4 +1,5 @@
 """Video renderer for karaoke-style lyrics video with word-by-word highlighting."""
+import bisect
 import os
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 import numpy as np
@@ -9,6 +10,11 @@ from utils import resource_path
 
 # Default background video (looping)
 DEFAULT_BG_VIDEO = "Red to Blue Squares - HD Video Background Loop [pVNbWKa6qbg].mp4"
+
+
+class RenderCancelled(Exception):
+    """Raised when the user cancels a render in progress."""
+    pass
 
 
 # Resolution presets (width, height)
@@ -59,6 +65,9 @@ class VideoRenderer:
 
         # Calculate timing info
         self._calculate_timing_info()
+
+        # Build scroll keyframes for smooth interpolation
+        self._build_scroll_keyframes()
 
         # Load background video if available
         bg_path = resource_path(DEFAULT_BG_VIDEO)
@@ -169,62 +178,72 @@ class VideoRenderer:
 
         return start_time, end_time
 
-    def _calculate_scroll_offset(self, time: float) -> float:
-        """Calculate vertical scroll offset for smooth continuous scrolling."""
-        if not self.lines or self.first_word_time is None:
-            return 0
+    def _build_scroll_keyframes(self):
+        """Build (time, offset) keyframes for per-segment interpolation.
 
-        # Calculate total content height
-        total_lines = len(self.lines)
-        total_height = total_lines * self.LINE_SPACING
-
-        # Intro phase: scroll from bottom to center
-        if time < self.first_word_time:
-            # Start with lines off-screen at bottom
-            # At t=0, offset should be negative (lines below screen)
-            # At t=first_word_time, first line should be at center
-            intro_duration = self.first_word_time
-            if intro_duration > 0:
-                progress = time / intro_duration
-                # Start offset: lines are below screen (negative offset pushes them down)
-                start_offset = -self.HEIGHT  # Lines start below screen
-                end_offset = 0  # First line at center
-                return start_offset + (end_offset - start_offset) * progress
-            return 0
-
-        # Main phase: scroll based on current position in lyrics
-        # Find current line and calculate smooth scroll
-        current_line_idx = 0
-        line_progress = 0.0
+        Each timed line produces a keyframe so the scroll always places
+        the active line at the anchor point exactly when it starts.
+        Between keyframes we interpolate linearly, which lets the scroll
+        speed adapt to varying lyrics density (sparse verse vs. dense chorus).
+        """
+        self._kf_times = []
+        self._kf_offsets = []
 
         for i, line_words in enumerate(self.lines):
-            start_time, end_time = self._get_line_timing(line_words)
-            if start_time is None:
-                continue
+            start_time, _ = self._get_line_timing(line_words)
+            if start_time is not None:
+                self._kf_times.append(start_time)
+                self._kf_offsets.append(i * self.LINE_SPACING)
 
-            if time >= start_time:
-                current_line_idx = i
-                # Get next line's start time for smooth transition
-                next_start = None
-                for j in range(i + 1, len(self.lines)):
-                    next_start_time, _ = self._get_line_timing(self.lines[j])
-                    if next_start_time is not None:
-                        next_start = next_start_time
-                        break
+    @staticmethod
+    def _smoothstep(t: float) -> float:
+        """Hermite smoothstep ease-in-out: 3t^2 - 2t^3."""
+        t = max(0.0, min(1.0, t))
+        return t * t * (3.0 - 2.0 * t)
 
-                if next_start and next_start > start_time:
-                    line_progress = min(1.0, (time - start_time) / (next_start - start_time))
-                elif end_time and end_time > start_time:
-                    # Last line or gap - use word timings
-                    line_progress = min(1.0, (time - start_time) / max(1.0, end_time - start_time + 1.0))
-                else:
-                    line_progress = 0.5
+    def _calculate_scroll_offset(self, time: float) -> float:
+        """Calculate vertical scroll offset using step-and-glide approach.
 
-        # Calculate smooth scroll offset
-        base_offset = current_line_idx * self.LINE_SPACING
-        within_line_offset = line_progress * self.LINE_SPACING
+        The active line stays centred for most of its duration, then the
+        view glides smoothly to the next line's position during a short
+        transition window at the end of each segment.
+        """
+        if not self._kf_times:
+            return 0
 
-        return base_offset + within_line_offset
+        first_time = self._kf_times[0]
+        first_offset = self._kf_offsets[0]
+
+        # Before first timed line: ease in from off-screen
+        if time < first_time:
+            if first_time > 0:
+                t = self._smoothstep(time / first_time)
+                return -self.HEIGHT + (first_offset + self.HEIGHT) * t
+            return first_offset
+
+        # After last timed line: hold position
+        if time >= self._kf_times[-1]:
+            return self._kf_offsets[-1]
+
+        # Find the surrounding keyframes
+        idx = bisect.bisect_right(self._kf_times, time) - 1
+        t0 = self._kf_times[idx]
+        t1 = self._kf_times[idx + 1]
+        o0 = self._kf_offsets[idx]
+        o1 = self._kf_offsets[idx + 1]
+
+        segment_dur = t1 - t0
+        # Transition takes at most 0.5s or 40% of the segment, whichever is shorter
+        transition_dur = min(0.5, segment_dur * 0.4)
+        transition_start = t1 - transition_dur
+
+        if time < transition_start:
+            # Hold at current line position
+            return o0
+        else:
+            # Glide to next line position
+            frac = (time - transition_start) / transition_dur
+            return o0 + (o1 - o0) * self._smoothstep(frac)
 
     def _get_loading_bar_progress(self, time: float, duration: float) -> float:
         """Get loading bar progress (0-1) or -1 if no bar should be shown."""
@@ -309,37 +328,30 @@ class VideoRenderer:
         return current_line_idx, line_progress
 
     def _get_line_opacity(self, line_idx: int, current_line_idx: int, line_progress: float, y_position: float) -> float:
-        """Calculate opacity for a line based on current line, progress, and screen position."""
-        # Fade zone at top of screen
-        FADE_ZONE_TOP = 150  # Start fading 150px from top
+        """Calculate opacity for a line based on its screen position only.
 
-        # Position-based fade (for lines going off top)
-        position_opacity = 1.0
-        if y_position < FADE_ZONE_TOP:
-            if y_position < 0:
-                position_opacity = 0.0
-            else:
-                position_opacity = y_position / FADE_ZONE_TOP
+        Lines fade symmetrically near both edges of the screen so they
+        scroll in from the bottom and out through the top naturally,
+        only becoming fully invisible once completely off-screen.
+        """
+        FADE_ZONE = int(self.HEIGHT * 0.12)  # 12% of screen height at each edge
+        top_limit = -self.FONT_SIZE * 2  # fully above viewport
+        bottom_limit = self.HEIGHT + self.FONT_SIZE * 2
 
-        if current_line_idx < 0:
-            return position_opacity
+        # Fully off-screen
+        if y_position < top_limit or y_position > bottom_limit:
+            return 0.0
 
-        # How many lines above the current line is this?
-        lines_above = current_line_idx - line_idx
+        # Fade near the top edge (from full opacity at FADE_ZONE down to 0 at top_limit)
+        if y_position < FADE_ZONE:
+            return max(0.0, (y_position - top_limit) / (FADE_ZONE - top_limit))
 
-        # Line-based fade
-        if lines_above < 2:
-            # Current line, one above, or below - full opacity (unless position fade)
-            line_opacity = 1.0
-        elif lines_above == 2:
-            # Two lines above - fade out as current line progresses
-            line_opacity = 1.0 - line_progress
-        else:
-            # More than 2 lines above - already faded
-            line_opacity = 0.0
+        # Fade near the bottom edge
+        bottom_threshold = self.HEIGHT - FADE_ZONE
+        if y_position > bottom_threshold:
+            return max(0.0, (bottom_limit - y_position) / (bottom_limit - bottom_threshold))
 
-        # Return minimum of both fades
-        return min(position_opacity, line_opacity)
+        return 1.0
 
     def _render_frame(self, time: float) -> np.ndarray:
         """Render a single frame at the given time."""
@@ -427,29 +439,43 @@ class VideoRenderer:
 
         return np.array(img.convert('RGB'))
 
-    def render(self, output_path: str, progress_callback=None):
+    def render(self, output_path: str, progress_callback=None, check_cancelled=None):
         """Render the full video to the output path."""
         audio = AudioFileClip(self.audio_path)
         duration = audio.duration
+        total_frames = int(duration * self.FPS)
+        frame_counter = [0]
 
         def make_frame(t):
+            if check_cancelled and check_cancelled():
+                raise RenderCancelled()
             frame = self._render_frame(t)
+            frame_counter[0] += 1
             if progress_callback:
-                progress_callback(t / duration)
+                progress_callback(t / duration, frame, frame_counter[0], total_frames)
             return frame
 
         video = VideoClip(make_frame, duration=duration)
         video = video.with_audio(audio)
 
-        video.write_videofile(
-            output_path,
-            fps=self.FPS,
-            codec='libx264',
-            audio_codec='aac',
-            threads=4,
-            preset='medium',
-            logger=None
-        )
+        try:
+            video.write_videofile(
+                output_path,
+                fps=self.FPS,
+                codec='libx264',
+                audio_codec='aac',
+                threads=4,
+                preset='medium',
+                logger=None
+            )
+        except RenderCancelled:
+            audio.close()
+            video.close()
+            if self.bg_clip:
+                self.bg_clip.close()
+            if os.path.exists(output_path):
+                os.remove(output_path)
+            raise
 
         audio.close()
         video.close()
@@ -483,6 +509,7 @@ def render_preview_frame(lyrics_timer: LyricsTimer, time: float, width: int = 80
     renderer.bg_duration = 0
     renderer._build_line_data()
     renderer._calculate_timing_info()
+    renderer._build_scroll_keyframes()
 
     frame_array = renderer._render_frame(time)
     return Image.fromarray(frame_array)
