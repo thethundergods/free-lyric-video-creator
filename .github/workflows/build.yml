@@ -29,6 +29,7 @@ jobs:
             --add-data "icon.png:." \
             --add-data "AppIcon.icns:." \
             --add-data "Red to Blue Squares - HD Video Background Loop [pVNbWKa6qbg].mp4:." \
+            --copy-metadata imageio \
             main.py
 
       - name: Create zip
@@ -64,6 +65,7 @@ jobs:
             --icon icon.ico `
             --add-data "icon.png;." `
             --add-data "Red to Blue Squares - HD Video Background Loop [pVNbWKa6qbg].mp4;." `
+            --copy-metadata imageio `
             main.py
 
       - name: Create zip
